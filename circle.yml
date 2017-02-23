@@ -1,0 +1,71 @@
+# This CircleCI configuration will build / test functions and deploy
+# them to the development AWS account
+#
+# These env variables are required for deployment:
+#
+#    AWS_REGION
+#    AWS_ACCESS_KEY_ID
+#    AWS_SECRET_ACCESS_KEY
+#
+# The above account should have this IAM inline policy:
+# The iam role: arn:aws:iam::927034868273:role/addons_lambda_function
+# was created with `apex init` with a high privileged account
+#
+#{
+#    "Version": "2012-10-17",
+#    "Statement": [
+#        {
+#            "Action": [
+#                "lambda:GetFunction",
+#                "lambda:CreateFunction",
+#                "lambda:DeleteFunction",
+#                "lambda:InvokeFunction",
+#                "lambda:GetFunctionConfiguration",
+#                "lambda:UpdateFunctionConfiguration",
+#                "lambda:UpdateFunctionCode",
+#                "lambda:CreateAlias",
+#                "lambda:UpdateAlias",
+#                "lambda:GetAlias",
+#                "lambda:ListVersionsByFunction"
+#            ],
+#            "Effect": "Allow",
+#            "Resource": "arn:aws:lambda:us-west-2:927034868273:function:addons_*"
+#        },
+#        {
+#            "Action": [
+#                "iam:PassRole",
+#                "iam:AttachRolePolicy"
+#            ],
+#            "Effect": "Allow",
+#            "Resource": "arn:aws:iam::927034868273:role/addons_lambda_function"
+#        },
+#        {
+#            "Action": [
+#                "logs:FilterLogEvents",
+#                "cloudwatch:GetMetricStatistics"
+#            ],
+#            "Effect": "Allow",
+#            "Resource": "*"
+#        }
+#    ]
+#}
+#
+
+dependencies:
+  cache_directories:
+    - "~/bin"
+
+  override:
+    # install apex
+    - if [[ ! -e ~/bin/apex ]]; then curl -vsL 'https://github.com/apex/apex/releases/download/v0.13.0/apex_linux_amd64' -o ~/bin/apex && chmod +x ~/bin/apex; fi
+
+test:
+  override:
+    - echo "todo"
+
+deployment:
+  # deploy the master branch
+  dev:
+    branch: "master"
+    commands:
+      - cd "./apex" && apex deploy
