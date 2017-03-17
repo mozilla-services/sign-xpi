@@ -1,6 +1,10 @@
 """
-Lambda example with external dependency
+sign-xpi: Sign an XPI file
 """
+
+import os.path
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "site-packages"))
 
 import logging
 import requests
