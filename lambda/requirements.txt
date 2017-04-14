@@ -1,2 +1,6 @@
 boto3
+marshmallow
 requests
+requests-hawk==1.0.0
+signing_clients
+six
