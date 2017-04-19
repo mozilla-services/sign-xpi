@@ -11,7 +11,7 @@ import json
 import marshmallow.fields
 import requests
 from requests_hawk import HawkAuth
-from signing_clients import apps as signing_clients
+from signing_clients.apps import JarExtractor
 from six.moves.urllib.parse import urljoin
 
 CHUNK_SIZE = 512 * 1024
@@ -39,6 +39,7 @@ class AutographInfo(marshmallow.Schema):
     hawk_id = marshmallow.fields.String(required=True, load_from="hawkId")
     hawk_secret = marshmallow.fields.String(required=True, load_from="hawkSecret")
     server_url = marshmallow.fields.String(required=True, load_from="serverUrl")
+    key_id = marshmallow.fields.String(required=True, load_from="keyId")
 
 
 class Context(marshmallow.Schema):
@@ -82,7 +83,8 @@ def handle(event, context):
     context = Context(strict=True).load(context).data
 
     (localfile, filename) = retrieve_xpi(event)
-    signed_xpi = sign_xpi(context['autograph'], localfile)
+    guid = get_guid(localfile)
+    signed_xpi = sign_xpi(context['autograph'], localfile, guid)
     return upload(context, file(signed_xpi), filename)
 
 
@@ -149,6 +151,7 @@ def extract_response_filename(response):
 
     return None
 
+
 def compute_checksum(contents):
     # Always use sha256 for now
     h = hashlib.sha256()
@@ -156,22 +159,30 @@ def compute_checksum(contents):
     return h.hexdigest()
 
 
-def sign_xpi(autograph_info, localfile):
+def get_guid(xpi_file):
+    return "some-fake-guid@example.com"
+
+
+def sign_xpi(autograph_info, localfile, guid):
     """
     Use the Autograph service to sign the XPI.
 
     :returns: filename of the signed XPI
     """
-    jar_extractor = signing_clients.JarExtractor(localfile, extra_newlines=True)
+    jar_extractor = JarExtractor(localfile, extra_newlines=True)
     auth = HawkAuth(id=autograph_info['hawk_id'], key=autograph_info['hawk_secret'])
     b64_payload = base64.b64encode(jar_extractor.signature)
     url = urljoin(autograph_info['server_url'], '/sign/data')
+    key_id = autograph_info['key_id']
     resp = requests.post(url, auth=auth, json=[{
         # FIXME: not Python 3 safe, but Amazon Lambda only supports
         # Python 2.7 anyhow so whatever
         "input": b64_payload,
-        "signature_encoding": "der_base64",
-        }])
+        "keyid": key_id,
+        "options": {
+            "id": guid,
+        }
+    }])
     resp.raise_for_status()
     signature = base64.b64decode(resp.json()[0]['signature'])
 
@@ -191,6 +202,7 @@ if __name__ == '__main__':
         "serverUrl": "http://localhost:8000/",
         "hawkId": "alice",
         "hawkSecret": "fs5wgcer9qj819kfptdlp8gm227ewxnzvsuj9ztycsx08hfhzu",
+        "keyId": "extensions-ecdsa",
     }
     context = {
         "autograph": AUTOGRAPH_INFO,

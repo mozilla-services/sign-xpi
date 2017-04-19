@@ -16,10 +16,14 @@ This lambda expects a context which should provide this information:
         "autograph": {
             "serverUrl": "http://localhost:8888/",  // or whatever
             "hawkId": "hawk-id-for-autograph",
-            "hawkSecret": "hawk-secret-for-autograph"
+            "hawkSecret": "hawk-secret-for-autograph",
+            "keyId": "autograph-signer-key-id"
         },
         "outputBucket": "some-s3-bucket"
     }
+
+The lambda is designed to sign only one category of addons: either system addons, or privileged extensions. To sign
+both, deploy the lambda twice with two sets of Autograph credentials.
 
 A "sign event" is taken as input, which should conform to this format:
 
