@@ -5,10 +5,12 @@ import os.path
 import rfc822
 import sys
 import tempfile
+import zipfile
 
 import boto3
 import json
 import marshmallow.fields
+import rdflib
 import requests
 from requests_hawk import HawkAuth
 from signing_clients.apps import JarExtractor
@@ -160,7 +162,53 @@ def compute_checksum(contents):
 
 
 def get_guid(xpi_file):
-    return "some-fake-guid@example.com"
+    ext_id = get_extension_id(xpi_file)
+    if len(ext_id) <= 64:
+        return ext_id
+    return hashlib.sha256(ext_id).hexdigest()
+
+
+def get_extension_id(xpi_file):
+    zip = zipfile.ZipFile(xpi_file)
+    contents = zip.namelist()
+    if 'install.rdf' in contents:
+        return get_extension_id_rdf(zip.open('install.rdf'))
+    elif 'manifest.json' in contents:
+        return get_extension_id_json(zip.open('manifest.json'))
+
+    raise ValueError("Can't extract ID from extension without install.rdf or manifest.json")
+
+
+def get_extension_id_json(manifest_json):
+    # Note: doesn't go to any lengths to support comments, unlike AMO
+    # (see for example
+    # https://github.com/mozilla/addons-server/blob/f554850626c2940d66f71b8f72ce86544e58bbd3/src/olympia/files/utils.py#L283)
+    manifest = json.load(manifest_json)
+    applications = manifest.get('applications', {})
+    gecko = manifest.get('gecko', {})
+    ext_id = gecko.get('id', None)
+    if not ext_id:
+        raise ValueError("Extension does not have ID in manifest.json")
+    return ext_id
+
+
+INSTALL_RDF_MANIFEST = rdflib.term.URIRef(u'urn:mozilla:install-manifest')
+INSTALL_RDF_NAMESPACE = 'http://www.mozilla.org/2004/em-rdf'
+INSTALL_RDF_ID_PREDICATE = rdflib.term.URIRef('{}#{}'.format(INSTALL_RDF_NAMESPACE, "id"))
+
+def get_extension_id_rdf(install_rdf):
+    # This is based off of code in AMO's utils.py. See:
+    # https://github.com/mozilla/addons-server/blob/f554850626c2940d66f71b8f72ce86544e58bbd3/src/olympia/files/utils.py
+    graph = rdflib.Graph()
+    graph.load(install_rdf)
+    if list(graph.triples((INSTALL_RDF_MANIFEST, None, None))):
+        root = INSTALL_RDF_MANIFEST
+    else:
+        root = graph.subjects(None, INSTALL_RDF_MANIFEST).next()
+
+    id_object = graph.objects(root, INSTALL_RDF_ID_PREDICATE).next()
+    # This is an rdflib.term.Literal, which is a subclass of Unicode
+    return unicode(id_object)
 
 
 def sign_xpi(autograph_info, localfile, guid):

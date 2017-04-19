@@ -1,5 +1,6 @@
 boto3
 marshmallow
+rdflib==4.2.2
 requests
 requests-hawk==1.0.0
 signing_clients
