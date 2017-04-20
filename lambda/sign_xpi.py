@@ -121,7 +121,9 @@ def retrieve_xpi(event):
     else:
         bucket = s3.Bucket(source['bucket'])
         key = source['key']
-        (_, filename) = key.rsplit('/', 1)
+        filename = key
+        if '/' in filename:
+            (_, filename) = key.rsplit('/', 1)
         bucket.download_fileobj(key, localfile)
 
     localfile.seek(0)
