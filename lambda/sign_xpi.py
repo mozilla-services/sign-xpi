@@ -37,16 +37,13 @@ class ChecksumMatchError(SignXPIError):
         self.actual_checksum = actual_checksum
 
 
-class AutographInfo(marshmallow.Schema):
-    hawk_id = marshmallow.fields.String(required=True, load_from="hawkId")
-    hawk_secret = marshmallow.fields.String(required=True, load_from="hawkSecret")
-    server_url = marshmallow.fields.String(required=True, load_from="serverUrl")
-    key_id = marshmallow.fields.String(required=True, load_from="keyId")
-
-
-class Context(marshmallow.Schema):
-    autograph = marshmallow.fields.Nested(AutographInfo, required=True)
+class Environment(marshmallow.Schema):
+    autograph_hawk_id = marshmallow.fields.String(required=True, load_from="autograph_hawkId")
+    autograph_hawk_secret = marshmallow.fields.String(required=True, load_from="autograph_hawkSecret")
+    autograph_server_url = marshmallow.fields.String(required=True, load_from="autograph_serverUrl")
+    autograph_key_id = marshmallow.fields.String(required=True, load_from="autograph_keyId")
     output_bucket = marshmallow.fields.String(required=True, load_from="outputBucket")
+
 
 class SourceInfo(marshmallow.Schema):
     """
@@ -76,22 +73,22 @@ class SignEvent(marshmallow.Schema):
     checksum = marshmallow.fields.String()
 
 
-def handle(event, context):
+def handle(event, context, env=os.environ):
     """
     Handle a sign-xpi event.
     """
 
     event = SignEvent(strict=True).load(event).data
-    context = Context(strict=True).load(context).data
+    env = Environment(strict=True).load(env).data
 
     (localfile, filename) = retrieve_xpi(event)
     guid = get_guid(localfile)
-    signed_xpi = sign_xpi(context['autograph'], localfile, guid)
-    return upload(context, file(signed_xpi), filename)
+    signed_xpi = sign_xpi(env, localfile, guid)
+    return upload(env, file(signed_xpi), filename)
 
 
-def upload(context, signed_xpi, filename):
-    bucket = s3.Bucket(context['output_bucket'])
+def upload(env, signed_xpi, filename):
+    bucket = s3.Bucket(env['output_bucket'])
     bucket.put_object(Body=signed_xpi, Key=filename)
 
     return {
@@ -211,17 +208,17 @@ def get_extension_id_rdf(install_rdf):
     return unicode(id_object)
 
 
-def sign_xpi(autograph_info, localfile, guid):
+def sign_xpi(env, localfile, guid):
     """
     Use the Autograph service to sign the XPI.
 
     :returns: filename of the signed XPI
     """
     jar_extractor = JarExtractor(localfile, extra_newlines=True)
-    auth = HawkAuth(id=autograph_info['hawk_id'], key=autograph_info['hawk_secret'])
+    auth = HawkAuth(id=env['autograph_hawk_id'], key=env['autograph_hawk_secret'])
     b64_payload = base64.b64encode(jar_extractor.signature)
-    url = urljoin(autograph_info['server_url'], '/sign/data')
-    key_id = autograph_info['key_id']
+    url = urljoin(env['autograph_server_url'], '/sign/data')
+    key_id = env['autograph_key_id']
     resp = requests.post(url, auth=auth, json=[{
         # FIXME: not Python 3 safe, but Amazon Lambda only supports
         # Python 2.7 anyhow so whatever
@@ -246,14 +243,11 @@ def sign_xpi(autograph_info, localfile, guid):
     return output_file
 
 if __name__ == '__main__':
-    AUTOGRAPH_INFO = {
-        "serverUrl": "http://localhost:8000/",
-        "hawkId": "alice",
-        "hawkSecret": "fs5wgcer9qj819kfptdlp8gm227ewxnzvsuj9ztycsx08hfhzu",
-        "keyId": "extensions-ecdsa",
-    }
-    context = {
-        "autograph": AUTOGRAPH_INFO,
+    env = {
+        "autograph_serverUrl": "http://localhost:8000/",
+        "autograph_hawkId": "alice",
+        "autograph_hawkSecret": "fs5wgcer9qj819kfptdlp8gm227ewxnzvsuj9ztycsx08hfhzu",
+        "autograph_keyId": "extensions-ecdsa",
         "outputBucket": "eglassercamp-addon-sign-xpi-output",
     }
-    print handle(json.loads(sys.stdin.read()), context)
+    print handle(json.loads(sys.stdin.read()), None, env)
