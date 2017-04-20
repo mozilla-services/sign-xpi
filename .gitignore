@@ -1,2 +1,5 @@
 apex/functions/sign-xpi/site-packages/
 .venv
+*.egg-info
+dist/
+build/
