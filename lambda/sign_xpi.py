@@ -175,7 +175,7 @@ def get_extension_id(xpi_file):
     elif 'manifest.json' in contents:
         return get_extension_id_json(zip.open('manifest.json'))
 
-    raise ValueError("Can't extract ID from extension without install.rdf or manifest.json")
+    raise ValueError("Extension is missing a manifest")
 
 
 def get_extension_id_json(manifest_json):
