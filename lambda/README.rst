@@ -14,7 +14,7 @@ This lambda expects a context which should provide this information:
 
     {
         "autograph": {
-            "serverUrl": "http://localhost:8888/",  // or whatever
+            "serverUrl": "http://some.server.example/",
             "hawkId": "hawk-id-for-autograph",
             "hawkSecret": "hawk-secret-for-autograph",
             "keyId": "autograph-signer-key-id"
