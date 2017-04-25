@@ -7,11 +7,10 @@ with open('README.rst') as readme_file:
     readme = readme_file.read()
 
 requirements = [
-    # TODO: put package requirements here
+    "boto3",
 ]
 
 test_requirements = [
-    # TODO: put package test requirements here
 ]
 
 setup(
@@ -25,8 +24,7 @@ setup(
     packages=[
         'addon_shipping_cli',
     ],
-    package_dir={'addon_shipping_cli':
-                 'addon_shipping_cli'},
+    package_dir={'addon_shipping_cli': 'addon_shipping_cli'},
     include_package_data=True,
     install_requires=requirements,
     license="MIT license",
