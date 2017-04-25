@@ -128,10 +128,10 @@ def retrieve_xpi(event):
 
     localfile.seek(0)
     local_checksum = compute_checksum(localfile)
+    localfile.seek(0)
     if local_checksum != event['checksum']:
         raise ChecksumMatchError(url, event['checksum'], local_checksum)
 
-    localfile.seek(0)
     return localfile, filename
 
 
