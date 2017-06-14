@@ -38,11 +38,16 @@ class ChecksumMatchError(SignXPIError):
 
 
 class Environment(marshmallow.Schema):
-    autograph_hawk_id = marshmallow.fields.String(required=True, load_from="autograph_hawkId")
-    autograph_hawk_secret = marshmallow.fields.String(required=True, load_from="autograph_hawkSecret")
-    autograph_server_url = marshmallow.fields.String(required=True, load_from="autograph_serverUrl")
-    autograph_key_id = marshmallow.fields.String(required=True, load_from="autograph_keyId")
-    output_bucket = marshmallow.fields.String(required=True, load_from="outputBucket")
+    autograph_hawk_id = marshmallow.fields.String(
+        required=True, load_from="AUTOGRAPH_HAWK_ID")
+    autograph_hawk_secret = marshmallow.fields.String(
+        required=True, load_from="AUTOGRAPH_HAWK_SECRET")
+    autograph_server_url = marshmallow.fields.String(
+        required=True, load_from="AUTOGRAPH_SERVER_URL")
+    autograph_key_id = marshmallow.fields.String(
+        required=True, load_from="AUTOGRAPH_KEY_ID")
+    output_bucket = marshmallow.fields.String(
+        required=True, load_from="OUTPUT_BUCKET")
 
 
 class SourceInfo(marshmallow.Schema):
@@ -246,10 +251,10 @@ def sign_xpi(env, localfile, guid):
 
 if __name__ == '__main__':
     env = {
-        "autograph_serverUrl": "http://localhost:8000/",
-        "autograph_hawkId": "alice",
-        "autograph_hawkSecret": "fs5wgcer9qj819kfptdlp8gm227ewxnzvsuj9ztycsx08hfhzu",
-        "autograph_keyId": "extensions-ecdsa",
-        "outputBucket": "eglassercamp-addon-sign-xpi-output",
+        "AUTOGRAPH_SERVER_URL": "http://localhost:8000/",
+        "AUTOGRAPH_HAWK_ID": "alice",
+        "AUTOGRAPH_HAWK_SECRET": "fs5wgcer9qj819kfptdlp8gm227ewxnzvsuj9ztycsx08hfhzu",
+        "AUTOGRAPH_KEY_ID": "extensions-ecdsa",
+        "OUTPUT_BUCKET": "eglassercamp-addon-sign-xpi-output",
     }
     print handle(json.loads(sys.stdin.read()), None, env)
