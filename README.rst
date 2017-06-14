@@ -9,6 +9,6 @@ amo2kinto-lambdo repo.
 
 Use this script to generate a zip for Amazon Lambda::
 
-  make clean virtualenv zip upload-to-s3
+  make clean virtualenv zip
 
 You must run this script on a linux x86_64 arch, the same as Amazon Lambda.
