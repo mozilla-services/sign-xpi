@@ -227,7 +227,7 @@ def sign_xpi(env, localfile, guid):
     url = urljoin(env['autograph_server_url'], '/sign/data')
     key_id = env['autograph_key_id']
     resp = requests.post(url, auth=auth, json=[{
-        # FIXME: not Python 3 safe, but Amazon Lambda only supports
+        # FIXME: not Python 3 safe, but signing-clients only supports
         # Python 2.7 anyhow so whatever
         "input": b64_payload,
         "keyid": key_id,
