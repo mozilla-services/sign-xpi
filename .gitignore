@@ -3,3 +3,5 @@ apex/functions/sign-xpi/site-packages/
 *.egg-info
 dist/
 build/
+*.pyc
+venv/
