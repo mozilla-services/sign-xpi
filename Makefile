@@ -6,5 +6,5 @@ virtualenv:
 	venv/bin/pip install -r lambda/requirements.txt
 
 zip: clean virtualenv
-	zip lambda.zip lambda/sign_xpi.py
+	zip lambda.zip lambda/sign_xpi.py lambda/__init__.py
 	cd venv/lib/python2.7/site-packages/; zip -r ../../../../lambda.zip *
