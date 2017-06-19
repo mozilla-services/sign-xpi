@@ -8,19 +8,15 @@ system or privileged addon, and adding a signature to it. The signature is provi
 Input
 =====
 
-This lambda expects a context which should provide this information:
+This lambda expects an environment which should provide this information:
 
 .. code-block:: json
 
-    {
-        "autograph": {
-            "serverUrl": "http://some.server.example/",
-            "hawkId": "hawk-id-for-autograph",
-            "hawkSecret": "hawk-secret-for-autograph",
-            "keyId": "autograph-signer-key-id"
-        },
-        "outputBucket": "some-s3-bucket"
-    }
+    AUTOGRAPH_SERVER_URL=http://some.server.example/
+    AUTOGRAPH_HAWK_ID=hawk-id-for-autograph
+    AUTOGRAPH_HAWK_SECRET=hawk-secret-for-autograph
+    AUTOGRAPH_KEY_ID=autograph-signer-key-id
+    OUTPUT_BUCKET=some-s3-bucket
 
 The lambda is designed to sign only one category of addons: either system addons, or privileged extensions. To sign
 both, deploy the lambda twice with two sets of Autograph credentials.
