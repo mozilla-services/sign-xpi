@@ -13,4 +13,4 @@ Use this script to generate a zip for Amazon Lambda::
 
 You must run this script on a linux x86_64 arch, the same as Amazon Lambda.
 
-This will package a lambda with a handler at ``lambda.sign_xpi.handle``.
+This will package a lambda with a handler at ``aws_lambda.sign_xpi.handle``.
