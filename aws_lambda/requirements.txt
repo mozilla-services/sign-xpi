@@ -3,5 +3,5 @@ marshmallow
 rdflib==4.2.2
 requests
 requests-hawk==1.0.0
-signing_clients
+signing_clients==0.1.14
 six
