@@ -7,4 +7,5 @@ virtualenv:
 
 zip: clean virtualenv
 	zip lambda.zip aws_lambda/sign_xpi.py aws_lambda/__init__.py
-	cd venv/lib/python2.7/site-packages/; zip -r ../../../../lambda.zip *
+	pushd venv/lib/python2.7/site-packages/; zip -r ../../../../lambda.zip *; popd
+	pushd venv/lib64/python2.7/site-packages/; zip -r ../../../../lambda.zip *; popd
