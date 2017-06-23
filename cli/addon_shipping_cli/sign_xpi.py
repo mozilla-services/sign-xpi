@@ -2,7 +2,7 @@
 The CLI command for the sign-xpi lambda.
 """
 
-import argparse
+from argparse import ArgumentParser
 import boto3
 import hashlib
 import json
@@ -15,10 +15,13 @@ DEFAULT_S3_BUCKET = 'eglassercamp-addon-sign-xpi-input'
 s3 = boto3.resource('s3')
 aws_lambda = boto3.client('lambda')
 
-parser = argparse.ArgumentParser(description=("Upload an XPI and"
-                                              "cause it to be signed."))
-parser.add_argument('-t', '--type', help="Type of XPI (system or privileged)",
-                    choices=['system', 'privileged'], required=True)
+parser = ArgumentParser(description="Upload an XPI and cause it to be signed.")
+parser.add_argument('-t', '--type',
+                    help="Type of XPI (system or mozillaextension)",
+                    choices=['system', 'mozillaextension'], required=True)
+parser.add_argument('-e', '--env',
+                    help="Environment to sign in (stage or prod)",
+                    choices=['stage', 'prod'], required=True)
 parser.add_argument('-s', '--s3-source', nargs='?',
                     help='S3 bucket to upload XPI to for signing')
 parser.add_argument('xpi_file', type=file, help="Filename of XPI to sign")
@@ -35,7 +38,7 @@ def main(args=sys.argv[1:]):
     key = os.path.basename(xpi_file.name)
     bucket.put_object(Body=xpi_file, Key=key)
 
-    function_name = 'addons-sign-xpi-{}'.format(parameters.type)
+    function_name = 'addons-sign-xpi-{}-{}'.format(parameters.type, parameters.env)
     lambda_args = {
         "source": {
             "bucket": bucket_name,
