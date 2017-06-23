@@ -189,7 +189,7 @@ def get_extension_id_json(manifest_json):
     # https://github.com/mozilla/addons-server/blob/f554850626c2940d66f71b8f72ce86544e58bbd3/src/olympia/files/utils.py#L283)
     manifest = json.load(manifest_json)
     applications = manifest.get('applications', {})
-    gecko = manifest.get('gecko', {})
+    gecko = applications.get('gecko', {})
     ext_id = gecko.get('id', None)
     if not ext_id:
         raise ValueError("Extension does not have ID in manifest.json")
