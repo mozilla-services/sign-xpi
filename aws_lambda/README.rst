@@ -1,8 +1,8 @@
 sign_xpi
 ========
 
-This function is responsible for "signing" an XPI for a system or privileged addon. This means taking a plain, unsigned
-system or privileged addon, and adding a signature to it. The signature is provided by `Autograph
+This function is responsible for "signing" an XPI for a system or Mozilla addon. This means taking a plain, unsigned
+system or Mozilla addon, and adding a signature to it. The signature is provided by `Autograph
 <https://github.com/mozilla-services/autograph/>`_, the Mozilla keyring service.
 
 Input
@@ -18,7 +18,7 @@ This lambda expects an environment which should provide this information:
     AUTOGRAPH_KEY_ID=autograph-signer-key-id
     OUTPUT_BUCKET=some-s3-bucket
 
-The lambda is designed to sign only one category of addons: either system addons, or privileged extensions. To sign
+The lambda is designed to sign only one category of addons: either system addons, or Mozilla extensions. To sign
 both, deploy the lambda twice with two sets of Autograph credentials.
 
 A "sign event" is taken as input, which should conform to this format:
@@ -50,5 +50,5 @@ The lambda will sign the XPI and upload it to the S3 bucket specified in its con
 Outstanding questions
 =====================
 
-- [ ] How does this lambda decide to use the signature/key for privileged extensions, vs. system addons?
+- [ ] How does this lambda decide to use the signature/key for Mozilla extensions, vs. system addons?
 - [ ] What format is mozilla.rsa? Am I handling it correctly from Autograph?
