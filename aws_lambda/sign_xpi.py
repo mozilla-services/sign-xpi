@@ -221,7 +221,10 @@ def sign_xpi(env, localfile, guid):
 
     :returns: filename of the signed XPI
     """
-    jar_extractor = JarExtractor(localfile, extra_newlines=True)
+    jar_extractor = JarExtractor(localfile, extra_newlines=True,
+                                 # FIXME: see https://github.com/mozilla/signing-clients/issues/25
+                                 omit_signature_sections=True
+    )
     auth = HawkAuth(id=env['autograph_hawk_id'], key=env['autograph_hawk_secret'])
     b64_payload = base64.b64encode(jar_extractor.signature)
     url = urljoin(env['autograph_server_url'], '/sign/data')
