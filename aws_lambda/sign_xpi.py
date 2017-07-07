@@ -13,7 +13,7 @@ import marshmallow.fields
 import rdflib
 import requests
 from requests_hawk import HawkAuth
-from signing_clients.apps import JarExtractor
+from sign_xpi_lib import XPIFile
 from six.moves.urllib.parse import urljoin
 
 CHUNK_SIZE = 512 * 1024
@@ -221,12 +221,9 @@ def sign_xpi(env, localfile, guid):
 
     :returns: filename of the signed XPI
     """
-    jar_extractor = JarExtractor(localfile, extra_newlines=True,
-                                 # FIXME: see https://github.com/mozilla/signing-clients/issues/25
-                                 omit_signature_sections=True
-    )
+    xpi_file = XPIFile(localfile)
     auth = HawkAuth(id=env['autograph_hawk_id'], key=env['autograph_hawk_secret'])
-    b64_payload = base64.b64encode(jar_extractor.signature)
+    b64_payload = base64.b64encode(xpi_file.signature)
     url = urljoin(env['autograph_server_url'], '/sign/data')
     key_id = env['autograph_key_id']
     resp = requests.post(url, auth=auth, json=[{
@@ -249,7 +246,9 @@ def sign_xpi(env, localfile, guid):
     (localstem, localext) = os.path.splitext(localfile.name)
     output_file = localstem + '-signed' + localext
 
-    jar_extractor.make_signed(signature, output_file, sigpath="mozilla.rsa")
+    xpi_file.make_signed(output_file, sigpath="mozilla.rsa",
+                         signed_manifest=xpi_file.signature,
+                         signature=signature)
     return output_file
 
 if __name__ == '__main__':
