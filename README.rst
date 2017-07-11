@@ -26,4 +26,5 @@ accidentally include dev tools in the lambda. To build it::
 Run the tests using::
 
   . .venv-dev/bin/activate
+  make run-autograph &
   py.test
