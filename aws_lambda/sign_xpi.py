@@ -23,6 +23,7 @@ logger.setLevel(logging.INFO)
 
 s3 = boto3.resource('s3')
 
+
 class SignXPIError(Exception):
     """Abstract base class for errors in this lambda."""
 
@@ -89,7 +90,7 @@ def handle(event, context, env=os.environ):
     (localfile, filename) = retrieve_xpi(event)
     guid = get_guid(localfile)
     signed_xpi = sign_xpi(env, localfile, guid)
-    return upload(env, file(signed_xpi), filename)
+    return upload(env, open(signed_xpi), filename)
 
 
 def upload(env, signed_xpi, filename):
@@ -105,12 +106,13 @@ def upload(env, signed_xpi, filename):
 
 
 def retrieve_xpi(event):
-    """
-    Download the XPI to some local file, verifying that its checksum is correct.
+    """Download the XPI to some local file, verifying its checksum is correct.
 
-    Returns a local "temporary" file containing the XPI as well as its "filename" as best as we could deduce.
+    Returns a local "temporary" file containing the XPI as well as its
+    "filename" as best as we could deduce.
 
     :return: (localfile, filename)
+
     """
     localfile = tempfile.NamedTemporaryFile()
     source = event['source']
@@ -198,7 +200,9 @@ def get_extension_id_json(manifest_json):
 
 INSTALL_RDF_MANIFEST = rdflib.term.URIRef(u'urn:mozilla:install-manifest')
 INSTALL_RDF_NAMESPACE = 'http://www.mozilla.org/2004/em-rdf'
-INSTALL_RDF_ID_PREDICATE = rdflib.term.URIRef('{}#{}'.format(INSTALL_RDF_NAMESPACE, "id"))
+INSTALL_RDF_ID_PREDICATE = rdflib.term.URIRef(
+    '{}#{}'.format(INSTALL_RDF_NAMESPACE, "id"))
+
 
 def get_extension_id_rdf(install_rdf):
     # This is based off of code in AMO's utils.py. See:
@@ -221,11 +225,12 @@ def sign_xpi(env, localfile, guid):
 
     :returns: filename of the signed XPI
     """
+    # FIXME: see https://github.com/mozilla/signing-clients/issues/25
     jar_extractor = JarExtractor(localfile, extra_newlines=True,
-                                 # FIXME: see https://github.com/mozilla/signing-clients/issues/25
                                  omit_signature_sections=True
     )
-    auth = HawkAuth(id=env['autograph_hawk_id'], key=env['autograph_hawk_secret'])
+    auth = HawkAuth(id=env['autograph_hawk_id'],
+                    key=env['autograph_hawk_secret'])
     b64_payload = base64.b64encode(jar_extractor.signature)
     url = urljoin(env['autograph_server_url'], '/sign/data')
     key_id = env['autograph_key_id']
@@ -252,12 +257,14 @@ def sign_xpi(env, localfile, guid):
     jar_extractor.make_signed(signature, output_file, sigpath="mozilla.rsa")
     return output_file
 
+
 if __name__ == '__main__':
     env = {
         "AUTOGRAPH_SERVER_URL": "http://localhost:8000/",
         "AUTOGRAPH_HAWK_ID": "alice",
-        "AUTOGRAPH_HAWK_SECRET": "fs5wgcer9qj819kfptdlp8gm227ewxnzvsuj9ztycsx08hfhzu",
+        "AUTOGRAPH_HAWK_SECRET": ("fs5wgcer9qj819kfptdlp8gm227"
+                                  "ewxnzvsuj9ztycsx08hfhzu"),
         "AUTOGRAPH_KEY_ID": "extensions-ecdsa",
         "OUTPUT_BUCKET": "eglassercamp-addon-sign-xpi-output",
     }
-    print handle(json.loads(sys.stdin.read()), None, env)
+    print(handle(json.loads(sys.stdin.read()), None, env))
