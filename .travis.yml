@@ -15,6 +15,7 @@ matrix:
 # command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
 install:
   - pip install -U tox-travis
+  - make install-autograph
   - make run-autograph&
 
 # command to run tests, e.g. python setup.py test
