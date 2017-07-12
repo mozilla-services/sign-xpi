@@ -1,4 +1,5 @@
 import base64
+from cStringIO import StringIO
 import os.path
 import shutil
 import subprocess
@@ -81,3 +82,17 @@ def test_sign_xpi_generates_signed_xpi(temp_directory):
     (_, our_sha1) = sha1_line.split()
 
     assert our_sha1 == sha1
+
+
+def test_get_extension_id_rdf_sanity_check():
+    simple_rdf = StringIO("""<?xml version="1.0" encoding="UTF-8"?>
+
+<RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+     xmlns:em="http://www.mozilla.org/2004/em-rdf#">
+  <Description about="urn:mozilla:install-manifest">
+    <em:id>hypothetical-addon@mozilla.org</em:id>
+  </Description>
+</RDF>""")
+    extension_id = sign_xpi.get_extension_id_rdf(simple_rdf)
+
+    assert extension_id == 'hypothetical-addon@mozilla.org'
