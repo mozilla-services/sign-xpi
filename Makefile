@@ -5,11 +5,11 @@ clean:
 	rm -fr venv $(VENV) lambda.zip ami-built-lambda.zip
 
 virtualenv:
-	virtualenv $(VENV) --python=python2.7
+	virtualenv $(VENV) --python=python3.6
 	$(VENV)/bin/pip install -r aws_lambda/requirements.txt
 
 virtualenv-dev:
-	virtualenv $(VENV_DEV) --python=python2.7
+	virtualenv $(VENV_DEV) --python=python3.6
 	$(VENV_DEV)/bin/pip install -r aws_lambda/requirements.txt
 	$(VENV_DEV)/bin/pip install -r requirements_dev.txt
 

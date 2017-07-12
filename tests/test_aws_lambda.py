@@ -1,5 +1,5 @@
 import base64
-from cStringIO import StringIO
+import io
 import os.path
 import shutil
 import subprocess
@@ -28,7 +28,6 @@ def temp_directory():
 def test_sign_xpi_generates_signed_xpi(temp_directory):
     unsigned_addon = os.path.join(temp_directory, ADDON_FILENAME)
     shutil.copy(get_test_file(ADDON_FILENAME), unsigned_addon)
-    unsigned_file = open(unsigned_addon, 'r')
     guid = 'hypothetical-addon@mozilla.org'
     env = {
         'autograph_server_url': 'http://localhost:8000',
@@ -37,12 +36,15 @@ def test_sign_xpi_generates_signed_xpi(temp_directory):
                                   "ewxnzvsuj9ztycsx08hfhzu"),
         "autograph_key_id": "extensions-ecdsa"
     }
+    unsigned_file = open(unsigned_addon, 'rb')
     new_xpi = sign_xpi.sign_xpi(env, unsigned_file, guid)
     new_xpi_as_zip = ZipFile(new_xpi)
+
     def extract_single(filename):
         extracted_filename = os.path.join(temp_directory, filename)
         archive_filename = os.path.join('META-INF', filename)
-        open(extracted_filename, 'w').write(new_xpi_as_zip.read(archive_filename))
+        open(extracted_filename, 'wb').write(
+            new_xpi_as_zip.read(archive_filename))
 
     extract_single('manifest.mf')
     extract_single('mozilla.rsa')
@@ -81,11 +83,11 @@ def test_sign_xpi_generates_signed_xpi(temp_directory):
     sha1_line = sha1_lines[0]
     (_, our_sha1) = sha1_line.split()
 
-    assert our_sha1 == sha1
+    assert our_sha1 == sha1.decode('utf-8')
 
 
 def test_get_extension_id_rdf_sanity_check():
-    simple_rdf = StringIO("""<?xml version="1.0" encoding="UTF-8"?>
+    simple_rdf = io.StringIO("""<?xml version="1.0" encoding="UTF-8"?>
 
 <RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
      xmlns:em="http://www.mozilla.org/2004/em-rdf#">

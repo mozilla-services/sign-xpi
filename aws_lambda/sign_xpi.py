@@ -2,7 +2,7 @@ import base64
 import hashlib
 import logging
 import os.path
-import rfc822
+import email.utils
 import sys
 import tempfile
 import zipfile
@@ -155,7 +155,7 @@ def extract_response_filename(response):
     for parameter in parameters[1:]:
         name, value = parameter.strip().split('=', 1)
         if name == 'filename':
-            return rfc822.unquote(value)
+            return email.utils.unquote(value)
 
     return None
 
@@ -214,9 +214,9 @@ def get_extension_id_rdf(install_rdf):
     else:
         root = graph.subjects(None, INSTALL_RDF_MANIFEST).next()
 
-    id_object = graph.objects(root, INSTALL_RDF_ID_PREDICATE).next()
+    id_object = next(graph.objects(root, INSTALL_RDF_ID_PREDICATE))
     # This is an rdflib.term.Literal, which is a subclass of Unicode
-    return unicode(id_object)
+    return str(id_object)
 
 
 def sign_xpi(env, localfile, guid):
@@ -228,13 +228,11 @@ def sign_xpi(env, localfile, guid):
     xpi_file = XPIFile(localfile)
     auth = HawkAuth(id=env['autograph_hawk_id'],
                     key=env['autograph_hawk_secret'])
-    b64_payload = base64.b64encode(xpi_file.signature)
+    b64_payload = base64.b64encode(xpi_file.signature.encode('utf-8'))
     url = urljoin(env['autograph_server_url'], '/sign/data')
     key_id = env['autograph_key_id']
     resp = requests.post(url, auth=auth, json=[{
-        # FIXME: not Python 3 safe, but signing-clients only supports
-        # Python 2.7 anyhow so whatever
-        "input": b64_payload,
+        "input": b64_payload.decode('utf-8'),
         "keyid": key_id,
         "options": {
             "id": guid,
