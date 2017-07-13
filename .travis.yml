@@ -1,0 +1,37 @@
+# Config file for automatic testing at travis-ci.org
+
+dist: trusty
+language: python
+python:
+  - 3.6
+  - 3.5
+  - 3.4
+  - 3.3
+matrix:
+  include:
+    - python: 3.6
+      script: tox -e flake8
+      env: TOX_ENV=flake8
+    - go: 1.8
+      language: go
+      addons:
+        apt:
+          sources:
+            - deadsnakes # source required so it finds the package definition below
+          packages:
+            - python3.5
+            - python3.5-dev
+      env:
+        - TOX_ENV=functional
+      install:
+        - pip install --user virtualenv tox
+        - make install-autograph
+        - make run-autograph &
+      script: tox -e functional
+
+# command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
+install:
+  - pip install -U tox-travis
+
+# command to run tests, e.g. python setup.py test
+script: tox
