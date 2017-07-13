@@ -29,7 +29,7 @@ get_zip: build_image
 install-autograph: $(VENV_DEV)/bin/autograph
 
 $(VENV_DEV)/bin/autograph:
-	env GOPATH=$(VENV_DEV) go get -u github.com/mozilla-services/autograph
+	env GOPATH=`pwd`/$(VENV_DEV) go get -u github.com/mozilla-services/autograph
 
 run-autograph: install-autograph
 	$(VENV_DEV)/bin/autograph -c $(VENV_DEV)/src/go.mozilla.org/autograph/autograph.yaml
