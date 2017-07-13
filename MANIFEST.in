@@ -1,0 +1,18 @@
+include CHANGELOG.rst
+include LICENSE
+include README.rst
+include aws_lambda/README.rst
+include cli/README.rst
+
+exclude circle.yml
+exclude Dockerfile
+exclude Makefile
+exclude requirements_dev.txt
+exclude tox.ini
+exclude aws_lambda/requirements.txt
+exclude cli/requirements.txt
+exclude tests/hypothetical-addon-unsigned.xpi
+
+recursive-include aws_lambda *.py
+recursive-include cli *.py
+recursive-include tests *.py
