@@ -106,13 +106,18 @@ def handle(event, context, env=os.environ):
     Handle a sign-xpi event.
     """
 
-    event = SignEvent(strict=True).load(event).data
+    event = S3Event(strict=True).load(event).data
     env = Environment(strict=True).load(env).data
 
-    (localfile, filename) = retrieve_xpi(event)
-    guid = get_guid(localfile)
-    signed_xpi = sign_xpi(env, localfile, guid)
-    return upload(env, open(signed_xpi), filename)
+    ret = []
+
+    for record in event['records']:
+        (localfile, filename) = retrieve_xpi(record)
+        guid = get_guid(localfile)
+        signed_xpi = sign_xpi(env, localfile, guid)
+        ret.append(upload(env, open(signed_xpi), filename))
+
+    return ret
 
 
 def upload(env, signed_xpi, filename):
@@ -137,29 +142,13 @@ def retrieve_xpi(event):
 
     """
     localfile = tempfile.NamedTemporaryFile()
-    source = event['source']
-    if source.get('url'):
-        url = source['url']
-        response = requests.get(url, stream=True)
-        response.raise_for_status()
-
-        (_, filename) = url.strip('/').rsplit('/', 1)
-        filename = extract_response_filename(response) or filename
-        for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
-            localfile.write(chunk)
-    else:
-        bucket = s3.Bucket(source['bucket'])
-        key = source['key']
-        filename = key
-        if '/' in filename:
-            (_, filename) = key.rsplit('/', 1)
-        bucket.download_fileobj(key, localfile)
-
-    localfile.seek(0)
-    local_checksum = compute_checksum(localfile)
-    localfile.seek(0)
-    if local_checksum != event['checksum']:
-        raise ChecksumMatchError(url, event['checksum'], local_checksum)
+    s3_data = event['s3']
+    key = s3_data['object']['key']
+    obj = s3.Object(s3_data['bucket']['name'], key)
+    obj.download_fileobj(localfile)
+    filename = key
+    if '/' in filename:
+        (_, filename) = key.rsplit('/', 1)
 
     return localfile, filename
 
