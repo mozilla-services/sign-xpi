@@ -74,6 +74,28 @@ class SourceInfo(marshmallow.Schema):
             ["url", "bucket", "key"])
 
 
+class BucketData(marshmallow.Schema):
+    name = marshmallow.fields.String(required=True)
+
+
+class ObjectData(marshmallow.Schema):
+    key = marshmallow.fields.String(required=True)
+
+
+class S3Data(marshmallow.Schema):
+    bucket = marshmallow.fields.Nested(BucketData, required=True)
+    object = marshmallow.fields.Nested(ObjectData, required=True)
+
+
+class EventRecord(marshmallow.Schema):
+    s3 = marshmallow.fields.Nested(S3Data, required=True)
+
+
+class S3Event(marshmallow.Schema):
+    records = marshmallow.fields.List(
+        marshmallow.fields.Nested(EventRecord), load_from='Records', required=True)
+
+
 class SignEvent(marshmallow.Schema):
     source = marshmallow.fields.Nested(SourceInfo, required=True)
     checksum = marshmallow.fields.String()
