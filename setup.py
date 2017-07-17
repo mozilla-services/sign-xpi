@@ -10,7 +10,7 @@ with open('CHANGELOG.rst') as changelog_file:
 
 setup(
     name='sign_xpi-parent',
-    version='0.1.1',
+    version='0.1.2.dev0',
     description='Fake parent package for the sign-xpi lambda',
     long_description=readme + '\n\n' + changelog,
     author="Product Delivery Team",
