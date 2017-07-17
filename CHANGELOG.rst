@@ -4,7 +4,9 @@ History
 0.1.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+**Bug fixes**
+
+- Fix bug in Python 3.6 support in Makefile.
 
 
 0.1.0 (2017-07-13)
