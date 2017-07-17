@@ -15,8 +15,7 @@ virtualenv-dev:
 
 zip: clean virtualenv
 	zip lambda.zip aws_lambda/sign_xpi.py aws_lambda/__init__.py
-	pushd $(VENV)/lib/python2.7/site-packages/; zip -r ../../../../lambda.zip *; popd
-	pushd $(VENV)/lib64/python2.7/site-packages/; zip -r ../../../../lambda.zip *; popd
+	cd $(VENV)/lib/python3.6/site-packages/; zip -r ../../../../lambda.zip *
 
 build_image:
 	docker build -t sign-xpi .
