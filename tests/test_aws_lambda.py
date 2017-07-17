@@ -117,3 +117,20 @@ def test_parse_s3_event_fails_when_missing_s3():
     }
     with pytest.raises(marshmallow.exceptions.ValidationError):
         sign_xpi.S3Event(strict=True).load(raw_s3_event).data
+
+
+def test_verify_extension_id_sanity_check():
+    event = {'s3': {'object': {'key': 'test-pilot@mozilla.com/build-20170715.xpi'}}}
+    sign_xpi.verify_extension_id(event, 'test-pilot@mozilla.com')
+
+
+def test_verify_extension_id_enforces_match():
+    event = {'s3': {'object': {'key': 'devtools@mozilla.com/build-20170715.xpi'}}}
+    with pytest.raises(sign_xpi.S3IdMatchError):
+        sign_xpi.verify_extension_id(event, 'test-pilot@mozilla.com')
+
+
+def test_verify_extension_id_handles_missing_id():
+    event = {'s3': {'object': {'key': 'build-20170715.xpi'}}}
+    with pytest.raises(sign_xpi.S3IdNotPresentError):
+        sign_xpi.verify_extension_id(event, 'test-pilot@mozilla.com')

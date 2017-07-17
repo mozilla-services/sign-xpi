@@ -38,6 +38,23 @@ class ChecksumMatchError(SignXPIError):
         self.actual_checksum = actual_checksum
 
 
+class S3IdNotPresentError(SignXPIError):
+    def __init__(self, s3_key):
+        message = "S3 path was not prefixed with an XPI ID (got {})".format(
+            s3_key)
+        super(S3IdNotPresentError, self).__init__(message)
+        self.s3_key = s3_key
+
+
+class S3IdMatchError(SignXPIError):
+    def __init__(self, xpi_id, s3_id):
+        message = "XPI ID was {} (S3 path starts with {})".format(
+            xpi_id, s3_id)
+        super(S3IdMatchError, self).__init__(message)
+        self.xpi_id = xpi_id
+        self.s3_id = s3_id
+
+
 class Environment(marshmallow.Schema):
     autograph_hawk_id = marshmallow.fields.String(
         required=True, load_from="AUTOGRAPH_HAWK_ID")
@@ -114,6 +131,7 @@ def handle(event, context, env=os.environ):
     for record in event['records']:
         (localfile, filename) = retrieve_xpi(record)
         guid = get_guid(localfile)
+        verify_extension_id(record, guid)
         signed_xpi = sign_xpi(env, localfile, guid)
         ret.append(upload(env, open(signed_xpi), filename))
 
@@ -183,6 +201,15 @@ def get_guid(xpi_file):
     if len(ext_id) <= 64:
         return ext_id
     return hashlib.sha256(ext_id).hexdigest()
+
+
+def verify_extension_id(event, xpi_id):
+    key = event['s3']['object']['key']
+    if '/' not in key:
+        raise S3IdNotPresentError(key)
+    (event_id, _) = key.split('/')
+    if event_id != xpi_id:
+        raise S3IdMatchError(xpi_id, event_id)
 
 
 def get_extension_id(xpi_file):
