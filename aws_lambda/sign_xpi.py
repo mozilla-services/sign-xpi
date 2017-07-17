@@ -197,7 +197,7 @@ def compute_checksum(contents):
 
 
 def get_guid(xpi_file):
-    ext_id = get_extension_id(xpi_file)
+    ext_id = get_extension_id(zipfile.ZipFile(xpi_file))
     if len(ext_id) <= 64:
         return ext_id
     return hashlib.sha256(ext_id).hexdigest()
@@ -212,13 +212,12 @@ def verify_extension_id(event, xpi_id):
         raise S3IdMatchError(xpi_id, event_id)
 
 
-def get_extension_id(xpi_file):
-    zip = zipfile.ZipFile(xpi_file)
-    contents = zip.namelist()
+def get_extension_id(zipfile):
+    contents = zipfile.namelist()
     if 'install.rdf' in contents:
-        return get_extension_id_rdf(zip.open('install.rdf'))
+        return get_extension_id_rdf(zipfile.open('install.rdf'))
     elif 'manifest.json' in contents:
-        return get_extension_id_json(zip.open('manifest.json'))
+        return get_extension_id_json(zipfile.open('manifest.json'))
 
     raise ValueError("Extension is missing a manifest")
 

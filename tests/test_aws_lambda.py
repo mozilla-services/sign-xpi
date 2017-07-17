@@ -1,4 +1,5 @@
 import io
+from unittest import mock
 import pytest
 import marshmallow.exceptions
 from aws_lambda import sign_xpi
@@ -134,3 +135,23 @@ def test_verify_extension_id_handles_missing_id():
     event = {'s3': {'object': {'key': 'build-20170715.xpi'}}}
     with pytest.raises(sign_xpi.S3IdNotPresentError):
         sign_xpi.verify_extension_id(event, 'test-pilot@mozilla.com')
+
+
+def test_get_extension_id_invokes_rdf():
+    """Verify that get_extension_id tries to determine the XPI type"""
+    zip = mock.Mock()
+    zip.namelist = mock.Mock(return_value=['install.rdf'])
+    id_sentinel = mock.sentinel.rdf_id
+    with mock.patch('aws_lambda.sign_xpi.get_extension_id_rdf',
+                    return_value=id_sentinel):
+        assert sign_xpi.get_extension_id(zip) == id_sentinel
+
+
+def test_get_extension_id_invokes_json():
+    """Verify that get_extension_id tries to determine the XPI type"""
+    zip = mock.Mock()
+    zip.namelist = mock.Mock(return_value=['manifest.json'])
+    id_sentinel = mock.sentinel.json_id
+    with mock.patch('aws_lambda.sign_xpi.get_extension_id_json',
+                    return_value=id_sentinel):
+        assert sign_xpi.get_extension_id(zip) == id_sentinel
