@@ -1,7 +1,8 @@
-FROM amazonlinux:latest
+FROM python:3.6
 
 COPY . /app
 WORKDIR /app
 
-RUN yum install -y python27-virtualenv openssl-devel zip gcc
+RUN apt-get update && apt-get -y install zip && rm -rf /var/lib/apt/lists/*
+RUN pip install virtualenv
 RUN make zip
