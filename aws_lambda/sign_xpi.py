@@ -135,7 +135,7 @@ def handle(event, context, env=os.environ):
         guid = get_guid(localfile)
         verify_extension_id(record, guid)
         signed_xpi = sign_xpi(env, localfile, guid)
-        ret.append(upload(env, open(signed_xpi), filename))
+        ret.append(upload(env, open(signed_xpi, 'rb'), filename))
 
     return ret
 
