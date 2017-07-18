@@ -90,7 +90,7 @@ def handle(event, context, env=os.environ):
     (localfile, filename) = retrieve_xpi(event)
     guid = get_guid(localfile)
     signed_xpi = sign_xpi(env, localfile, guid)
-    return upload(env, open(signed_xpi), filename)
+    return upload(env, open(signed_xpi, 'rb'), filename)
 
 
 def upload(env, signed_xpi, filename):
