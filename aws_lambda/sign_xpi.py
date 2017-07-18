@@ -38,6 +38,23 @@ class ChecksumMatchError(SignXPIError):
         self.actual_checksum = actual_checksum
 
 
+class S3IdNotPresentError(SignXPIError):
+    def __init__(self, s3_key):
+        message = "S3 path was not prefixed with an XPI ID (got {})".format(
+            s3_key)
+        super(S3IdNotPresentError, self).__init__(message)
+        self.s3_key = s3_key
+
+
+class S3IdMatchError(SignXPIError):
+    def __init__(self, xpi_id, s3_id):
+        message = "XPI ID was {} (S3 path starts with {})".format(
+            xpi_id, s3_id)
+        super(S3IdMatchError, self).__init__(message)
+        self.xpi_id = xpi_id
+        self.s3_id = s3_id
+
+
 class Environment(marshmallow.Schema):
     autograph_hawk_id = marshmallow.fields.String(
         required=True, load_from="AUTOGRAPH_HAWK_ID")
@@ -74,6 +91,28 @@ class SourceInfo(marshmallow.Schema):
             ["url", "bucket", "key"])
 
 
+class BucketData(marshmallow.Schema):
+    name = marshmallow.fields.String(required=True)
+
+
+class ObjectData(marshmallow.Schema):
+    key = marshmallow.fields.String(required=True)
+
+
+class S3Data(marshmallow.Schema):
+    bucket = marshmallow.fields.Nested(BucketData, required=True)
+    object = marshmallow.fields.Nested(ObjectData, required=True)
+
+
+class EventRecord(marshmallow.Schema):
+    s3 = marshmallow.fields.Nested(S3Data, required=True)
+
+
+class S3Event(marshmallow.Schema):
+    records = marshmallow.fields.List(
+        marshmallow.fields.Nested(EventRecord), load_from='Records', required=True)
+
+
 class SignEvent(marshmallow.Schema):
     source = marshmallow.fields.Nested(SourceInfo, required=True)
     checksum = marshmallow.fields.String()
@@ -84,13 +123,19 @@ def handle(event, context, env=os.environ):
     Handle a sign-xpi event.
     """
 
-    event = SignEvent(strict=True).load(event).data
+    event = S3Event(strict=True).load(event).data
     env = Environment(strict=True).load(env).data
 
-    (localfile, filename) = retrieve_xpi(event)
-    guid = get_guid(localfile)
-    signed_xpi = sign_xpi(env, localfile, guid)
-    return upload(env, open(signed_xpi), filename)
+    ret = []
+
+    for record in event['records']:
+        (localfile, filename) = retrieve_xpi(record)
+        guid = get_guid(localfile)
+        verify_extension_id(record, guid)
+        signed_xpi = sign_xpi(env, localfile, guid)
+        ret.append(upload(env, open(signed_xpi), filename))
+
+    return ret
 
 
 def upload(env, signed_xpi, filename):
@@ -115,29 +160,13 @@ def retrieve_xpi(event):
 
     """
     localfile = tempfile.NamedTemporaryFile()
-    source = event['source']
-    if source.get('url'):
-        url = source['url']
-        response = requests.get(url, stream=True)
-        response.raise_for_status()
-
-        (_, filename) = url.strip('/').rsplit('/', 1)
-        filename = extract_response_filename(response) or filename
-        for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
-            localfile.write(chunk)
-    else:
-        bucket = s3.Bucket(source['bucket'])
-        key = source['key']
-        filename = key
-        if '/' in filename:
-            (_, filename) = key.rsplit('/', 1)
-        bucket.download_fileobj(key, localfile)
-
-    localfile.seek(0)
-    local_checksum = compute_checksum(localfile)
-    localfile.seek(0)
-    if local_checksum != event['checksum']:
-        raise ChecksumMatchError(url, event['checksum'], local_checksum)
+    s3_data = event['s3']
+    key = s3_data['object']['key']
+    obj = s3.Object(s3_data['bucket']['name'], key)
+    obj.download_fileobj(localfile)
+    filename = key
+    if '/' in filename:
+        (_, filename) = key.rsplit('/', 1)
 
     return localfile, filename
 
@@ -168,19 +197,27 @@ def compute_checksum(contents):
 
 
 def get_guid(xpi_file):
-    ext_id = get_extension_id(xpi_file)
+    ext_id = get_extension_id(zipfile.ZipFile(xpi_file))
     if len(ext_id) <= 64:
         return ext_id
     return hashlib.sha256(ext_id).hexdigest()
 
 
-def get_extension_id(xpi_file):
-    zip = zipfile.ZipFile(xpi_file)
-    contents = zip.namelist()
+def verify_extension_id(event, xpi_id):
+    key = event['s3']['object']['key']
+    if '/' not in key:
+        raise S3IdNotPresentError(key)
+    (event_id, _) = key.split('/')
+    if event_id != xpi_id:
+        raise S3IdMatchError(xpi_id, event_id)
+
+
+def get_extension_id(zipfile):
+    contents = zipfile.namelist()
     if 'install.rdf' in contents:
-        return get_extension_id_rdf(zip.open('install.rdf'))
+        return get_extension_id_rdf(zipfile.open('install.rdf'))
     elif 'manifest.json' in contents:
-        return get_extension_id_json(zip.open('manifest.json'))
+        return get_extension_id_json(zipfile.open('manifest.json'))
 
     raise ValueError("Extension is missing a manifest")
 
