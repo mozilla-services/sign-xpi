@@ -110,7 +110,9 @@ class EventRecord(marshmallow.Schema):
 
 class S3Event(marshmallow.Schema):
     records = marshmallow.fields.List(
-        marshmallow.fields.Nested(EventRecord), load_from='Records', required=True)
+        marshmallow.fields.Nested(EventRecord),
+        load_from='Records',
+        required=True)
 
 
 class SignEvent(marshmallow.Schema):
