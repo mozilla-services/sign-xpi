@@ -109,7 +109,9 @@ class ObjectData(marshmallow.Schema):
 
         """
         key = in_data['key']
-        return {**in_data, "key": unquote(key)}
+        out_data = in_data.copy()
+        out_data['key'] = unquote(key)
+        return out_data
 
 
 class S3Data(marshmallow.Schema):
