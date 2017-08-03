@@ -76,6 +76,38 @@ def test_parse_s3_event_success():
     }
 
 
+def test_parse_s3_key_urldecode():
+    raw_s3_event = {
+        "Records": [
+            {
+                "s3":{
+                    "bucket":{
+                        "name":"mybucket",
+                    },
+                    "object":{
+                        "key":"ethan%20test/HappyFace.jpg",
+                    }
+                }
+            },
+        ]
+    }
+    s3_event = sign_xpi.S3Event(strict=True).load(raw_s3_event).data
+    assert s3_event == {
+        'records': [
+            {
+                's3': {
+                    'bucket': {
+                        'name': 'mybucket',
+                    },
+                    'object': {
+                        'key': 'ethan test/HappyFace.jpg',
+                    }
+                }
+            }
+        ]
+    }
+
+
 def test_parse_s3_event_fails_when_missing_s3():
     raw_s3_event = {
         "Records": [

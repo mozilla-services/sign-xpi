@@ -14,7 +14,7 @@ import rdflib
 import requests
 from requests_hawk import HawkAuth
 from sign_xpi_lib import XPIFile
-from six.moves.urllib.parse import urljoin
+from six.moves.urllib.parse import urljoin, unquote
 
 CHUNK_SIZE = 512 * 1024
 
@@ -97,6 +97,19 @@ class BucketData(marshmallow.Schema):
 
 class ObjectData(marshmallow.Schema):
     key = marshmallow.fields.String(required=True)
+
+    @marshmallow.pre_load
+    def unencode_key(self, in_data):
+        """De-URL-encode keys
+
+        S3 events appear to have URL-encoded keys for reasons that
+        aren't clear. Perhaps all keys need to be URL-encoded on the
+        wire and boto handles it transparently for us? Whatever the
+        reasoning, undo it.
+
+        """
+        key = in_data['key']
+        return {**in_data, "key": unquote(key)}
 
 
 class S3Data(marshmallow.Schema):
