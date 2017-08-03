@@ -157,6 +157,7 @@ def handle(event, context, env=os.environ):
         verify_extension_id(record, guid)
         logger.info("Signing localfile=%s guid=%s", localfile.name, guid)
         signed_xpi = sign_xpi(env, localfile, guid)
+        logger.info("Uploading signed XPI as filename=%s guid=%s", filename, guid)
         ret.append(upload(env, open(signed_xpi, 'rb'), filename))
 
     return ret
