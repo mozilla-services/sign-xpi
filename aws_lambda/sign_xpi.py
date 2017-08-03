@@ -144,9 +144,18 @@ def handle(event, context, env=os.environ):
     ret = []
 
     for record in event['records']:
+        bucket = record['s3']['bucket']['name']
+        key = record['s3']['object']['key']
+        logger.info("Retrieving from S3 bucket=%s key=%s",
+                    bucket, key)
         (localfile, filename) = retrieve_xpi(record)
+        logger.info("Retrieved S3 bucket=%s key=%s => localfile=%s",
+                    bucket, key, localfile.name)
         guid = get_guid(localfile)
+        logger.info("Retrieved extension ID for localfile=%s => guid=%s",
+                    localfile.name, guid)
         verify_extension_id(record, guid)
+        logger.info("Signing localfile=%s guid=%s", localfile.name, guid)
         signed_xpi = sign_xpi(env, localfile, guid)
         ret.append(upload(env, open(signed_xpi, 'rb'), filename))
 
