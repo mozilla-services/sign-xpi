@@ -14,7 +14,7 @@ import rdflib
 import requests
 from requests_hawk import HawkAuth
 from sign_xpi_lib import XPIFile
-from six.moves.urllib.parse import urljoin
+from six.moves.urllib.parse import urljoin, unquote
 
 CHUNK_SIZE = 512 * 1024
 
@@ -98,6 +98,21 @@ class BucketData(marshmallow.Schema):
 class ObjectData(marshmallow.Schema):
     key = marshmallow.fields.String(required=True)
 
+    @marshmallow.pre_load
+    def unencode_key(self, in_data):
+        """De-URL-encode keys
+
+        S3 events appear to have URL-encoded keys for reasons that
+        aren't clear. Perhaps all keys need to be URL-encoded on the
+        wire and boto handles it transparently for us? Whatever the
+        reasoning, undo it.
+
+        """
+        key = in_data['key']
+        out_data = in_data.copy()
+        out_data['key'] = unquote(key)
+        return out_data
+
 
 class S3Data(marshmallow.Schema):
     bucket = marshmallow.fields.Nested(BucketData, required=True)
@@ -131,10 +146,21 @@ def handle(event, context, env=os.environ):
     ret = []
 
     for record in event['records']:
+        bucket = record['s3']['bucket']['name']
+        key = record['s3']['object']['key']
+        logger.info("Retrieving from S3 bucket=%s key=%s",
+                    bucket, key)
         (localfile, filename) = retrieve_xpi(record)
+        logger.info("Retrieved S3 bucket=%s key=%s => localfile=%s",
+                    bucket, key, localfile.name)
         guid = get_guid(localfile)
+        logger.info("Retrieved extension ID for localfile=%s => guid=%s",
+                    localfile.name, guid)
         verify_extension_id(record, guid)
+        logger.info("Signing localfile=%s guid=%s", localfile.name, guid)
         signed_xpi = sign_xpi(env, localfile, guid)
+        logger.info("Uploading signed XPI as filename=%s guid=%s",
+                    filename, guid)
         ret.append(upload(env, open(signed_xpi, 'rb'), filename))
 
     return ret
