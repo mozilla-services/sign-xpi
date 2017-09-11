@@ -15,6 +15,14 @@ You must run this script on a linux x86_64 arch, the same as Amazon Lambda.
 
 This will package a lambda with a handler at ``aws_lambda.sign_xpi.handle``.
 
+If you don't have access to exactly the right kind of machine, you can
+also use Docker with the command::
+
+  make get_zip
+
+This will package the same kind of lambda, but build it in a Docker
+container.
+
 Development
 ===========
 
