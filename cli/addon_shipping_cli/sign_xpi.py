@@ -13,9 +13,6 @@ import logging
 
 DEFAULT_S3_BUCKET = 'eglassercamp-addon-sign-xpi-input'
 
-s3 = boto3.resource('s3')
-aws_lambda = boto3.client('lambda')
-
 parser = ArgumentParser(description="Upload an XPI and cause it to be signed.")
 parser.add_argument('-v', dest="verbose", action="store_true",
                     help="Enable verbose logging")
@@ -27,11 +24,16 @@ parser.add_argument('-e', '--env',
                     choices=['stage', 'prod'], required=True)
 parser.add_argument('-s', '--s3-source', nargs='?',
                     help='S3 bucket to upload XPI to for signing')
+parser.add_argument('-p', '--profile', help='The name of the AWS profile to use')
 parser.add_argument('xpi_file', type=FileType('rb'), help="Filename of XPI to sign")
 
 
 def main(args=sys.argv[1:]):
     parameters = parser.parse_args(args)
+
+    session = boto3.Session(profile_name=parameters.profile)
+    s3 = session.resource('s3')
+    aws_lambda = session.client('lambda')
 
     if parameters.verbose:
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
